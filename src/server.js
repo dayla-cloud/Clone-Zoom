@@ -14,12 +14,25 @@ const handleListen = () => console.log(`Listening on http://localhost:3000`);
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
+const sockets = [];
+const onSocketClose = () => console.log("Disconnected from the Browser🥲");
+
 wss.on("connection", (socket) => {
-  console.log("Connected to You ✅");
-  socket.on("close", () => console.log("Disconnected from the Browser🥲"));
-  socket.on("message", (message) => {
-    console.log(message.toString());
+  console.log("connedted to FE");
+  sockets.push(socket);
+  socket["nickname"] = "noname";
+  socket.on("close", () => {
+    console.log("Disconnected from BE");
   });
-  socket.send("hello!");
+  socket.on("message", (backDataOfMessage) => {
+    const responseFromBack = JSON.parse(backDataOfMessage);
+    if (responseFromBack.type === "new_chat") {
+      sockets.forEach((aSocket) =>
+        aSocket.send(`${socket.nickname}:${responseFromBack.dataOfType}`)
+      );
+    } else if (responseFromBack.type === "nickname") {
+      socket["nickname"] = responseFromBack.dataOfType;
+    }
+  });
 });
 server.listen(3000, handleListen);
