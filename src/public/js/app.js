@@ -9,7 +9,7 @@ function submitNickname(e) {
   const input = nickForm.querySelector("input");
   socket.send(recieveData("nickname", input.value));
   input.placeholder = input.value;
-  input.disabled = true;
+  input.setAttribute("disabled", true);
 }
 
 function submitChat(e) {
@@ -22,11 +22,6 @@ function submitChat(e) {
 function recieveData(type, dataOfType) {
   const dataSocket = { type, dataOfType };
   return JSON.stringify(dataSocket);
-}
-
-function changeNickname() {
-  const input = nickForm.querySelector("input");
-  input.disabled = false;
 }
 
 socket.addEventListener("open", () => {
@@ -45,4 +40,7 @@ socket.addEventListener("message", (dataOfMessage) => {
 
 nickForm.addEventListener("submit", submitNickname);
 chatForm.addEventListener("submit", submitChat);
-changeBtn.addEventListener("click", changeNickname);
+changeBtn.addEventListener("click", () => {
+  const input = nickForm.querySelector("input");
+  input.removeAttribute("disabled");
+});
