@@ -1,46 +1,51 @@
-const chatList = document.querySelector("ul");
-const nickForm = document.getElementById("nickname");
-const chatForm = document.getElementById("chat");
-const changeBtn = document.getElementById("change");
-const socket = new WebSocket(`ws://${window.location.host}`);
+const socket = io();
+const welcome = document.getElementById("welcome");
+const room = document.getElementById("room");
+const form = welcome.querySelector("form");
 
-function submitNickname(e) {
-  e.preventDefault();
-  const input = nickForm.querySelector("input");
-  socket.send(recieveData("nickname", input.value));
-  input.placeholder = input.value;
-  input.setAttribute("disabled", true);
+room.hidden = true;
+
+let roomName;
+
+function addChat(event) {
+  const ul = room.querySelector("ul");
+  const li = document.createElement("li");
+  ul.appendChild(li);
+  li.innerText = event;
 }
 
-function submitChat(e) {
-  e.preventDefault();
-  const input = chatForm.querySelector("input");
-  socket.send(recieveData("new_chat", input.value));
+function submitNewMessage(event) {
+  event.preventDefault();
+  const messageInput = room.querySelector("input");
+  const value = messageInput.value;
+  socket.emit("new_message", messageInput.value, roomName, () => {
+    addChat(`You:${value}`);
+  });
+  messageInput.value = "";
+}
+
+function showRoom() {
+  welcome.hidden = true;
+  room.hidden = false;
+  const titleOfRoom = document.querySelector("h3");
+  titleOfRoom.innerText = `Rooms ${roomName}`;
+  const messageForm = room.querySelector("form");
+  messageForm.addEventListener("submit", submitNewMessage);
+}
+
+function handleRoomSubmit(event) {
+  event.preventDefault();
+  const input = form.querySelector("input");
+  socket.emit("enter_room", input.value, showRoom);
+  roomName = input.value;
   input.value = "";
 }
 
-function recieveData(type, dataOfType) {
-  const dataSocket = { type, dataOfType };
-  return JSON.stringify(dataSocket);
-}
-
-socket.addEventListener("open", () => {
-  console.log("Just Connected to BE");
+form.addEventListener("submit", handleRoomSubmit);
+socket.on("welcome", () => {
+  addChat("Somebody joined!");
 });
-
-socket.addEventListener("close", () => {
-  console.log("Disconnected");
+socket.on("bye", () => {
+  addChat("Somebody left ㅜㅜ");
 });
-
-socket.addEventListener("message", (dataOfMessage) => {
-  const li = document.createElement("li");
-  li.innerText = dataOfMessage.data;
-  chatList.append(li);
-});
-
-nickForm.addEventListener("submit", submitNickname);
-chatForm.addEventListener("submit", submitChat);
-changeBtn.addEventListener("click", () => {
-  const input = nickForm.querySelector("input");
-  input.removeAttribute("disabled");
-});
+socket.on("new_message", addChat);

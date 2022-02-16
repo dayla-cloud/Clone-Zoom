@@ -8,15 +8,17 @@ html(lang="en")
         link(rel="stylesheet", href="https://unpkg.com/mvp.css")
     body
         header
-            h1 220216 Noom Challenge / Dayla
+            h1 Welcome to Noom
         main
-            ul
-            form#chat
-                input(type="text", required, placeholder="chat here")
-                button SEND
-            form#nickname
-                input(type="text", required, placeholder = "save nickname")
-                button SAVE
-                button#change(type="button") CHANGE NAME
-
+            div#welcome
+                form
+                    input(placeholder="room name", type="text", required)
+                    button Enter Room
+            div#room
+                h3
+                ul 
+                form
+                    input(placeholder="chat here", type="text", required)
+                    button SEND
+        script(src="/socket.io/socket.io.js") 
         script(src="/public/js/app.js") 

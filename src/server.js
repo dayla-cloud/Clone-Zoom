@@ -1,6 +1,8 @@
 import express, { application } from "express";
 import http from "http";
-import WebSocket from "ws";
+import SocketIO from "socket.io";
+import { callbackify } from "util";
+// import { WebSocketServer } from "ws";
 const app = express();
 
 app.set("view engine", "pug");
@@ -9,30 +11,27 @@ app.use("/public", express.static(__dirname + "/public"));
 app.get("/", (req, res) => res.render("home"));
 app.get("/*", (req, res) => res.redirect("/"));
 
-const handleListen = () => console.log(`Listening on https://localhost:3000`);
+const handleListen = () => console.log(`Listening on http://localhost:3000`);
 
-const server = http.createServer(app);
-const wss = new WebSocket.Server({ server });
+const httpServer = http.createServer(app);
+const wsServer = SocketIO(httpServer);
 
-const sockets = [];
-const onSocketClose = () => console.log("Disconnected from the Browser🥲");
-
-wss.on("connection", (socket) => {
-  console.log("connedted to FE");
-  sockets.push(socket);
-  socket["nickname"] = "noname";
-  socket.on("close", () => {
-    console.log("Disconnected from BE");
+wsServer.on("connection", (socket) => {
+  socket.onAny((event) => {
+    console.log(`Socket Event:${event}`);
   });
-  socket.on("message", (backDataOfMessage) => {
-    const responseFromBack = JSON.parse(backDataOfMessage);
-    if (responseFromBack.type === "new_chat") {
-      sockets.forEach((aSocket) =>
-        aSocket.send(`${socket.nickname}:${responseFromBack.dataOfType}`)
-      );
-    } else if (responseFromBack.type === "nickname") {
-      socket["nickname"] = responseFromBack.dataOfType;
-    }
+  socket.on("enter_room", (roomName, done) => {
+    socket.join(roomName);
+    done();
+    socket.to(roomName).emit("welcome");
+  });
+  socket.on("disconnecting", () => {
+    socket.rooms.forEach((room) => socket.to(room).emit("bye"));
+  });
+  socket.on("new_message", (valueOfInput, roomWeAre, done) => {
+    socket.to(roomWeAre).emit("new_message", valueOfInput);
+    done();
   });
 });
-server.listen(3000, handleListen);
+
+httpServer.listen(3000, handleListen);
